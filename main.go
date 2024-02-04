@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -177,18 +178,30 @@ func main() {
 	allTips := concatSlices(vimTips, pluginTips, colorSchemes)
 
 	app.Get("/", func(ctx *fiber.Ctx) error {
-		random := rand.Intn(len(allTips))
-		return ctx.SendString(allTips[random])
-	})
+		queries := ctx.Queries()
+		fmt.Println("queries", queries)
+		if len(queries) == 0 {
+			return ctx.SendString(allTips[rand.Intn(len(allTips))])
+		}
 
-	app.Get("/plugin", func(ctx *fiber.Ctx) error {
-		random := rand.Intn(len(pluginTips))
-		return ctx.SendString(pluginTips[random])
-	})
+		var tips []string
+		for query := range queries {
+			fmt.Println("QUERY", query)
+			switch query {
+			case "vim":
+				tips = concatSlices(tips, vimTips)
+			case "plugin":
+				tips = concatSlices(tips, pluginTips)
+			case "colorscheme":
+				tips = concatSlices(tips, colorSchemes)
+			case "all":
+				tips = allTips
+			default:
+				tips = allTips
+			}
+		}
 
-	app.Get("/vim", func(ctx *fiber.Ctx) error {
-		random := rand.Intn(len(vimTips))
-		return ctx.SendString(vimTips[random])
+		return ctx.SendString(tips[rand.Intn(len(tips))])
 	})
 
 	port := os.Getenv("PORT")
