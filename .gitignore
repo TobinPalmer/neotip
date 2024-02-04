@@ -2,3 +2,4 @@
 .docker_build/
 bin/
 .idea
+tmp
