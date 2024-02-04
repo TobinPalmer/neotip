@@ -1,4 +1,4 @@
-module github.com/heroku/go-starter-template
+module github.com/heroku/neotip
 
 // +heroku goVersion go1.20
 go 1.20

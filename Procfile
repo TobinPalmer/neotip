@@ -1,1 +1,1 @@
-web: go-starter-template
+web: neotip
