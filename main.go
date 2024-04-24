@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	_ "github.com/heroku/x/hmetrics/onload"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 )
@@ -308,36 +310,39 @@ func main() {
 	allTips := concatSlices(vimTips, pluginTips, colorSchemes)
 
 	app.Get("/", func(ctx *fiber.Ctx) error {
+		queries := ctx.Queries()
+		if len(queries) == 0 {
+			return ctx.SendString(allTips[rand.Intn(len(allTips))])
+		}
+
+		var tips []string
+		for query := range queries {
+			fmt.Println("QUERY", query)
+			switch query {
+			case "vim":
+				tips = concatSlices(tips, vimTips)
+			case "plugin":
+				tips = concatSlices(tips, pluginTips)
+			case "colorscheme":
+				tips = concatSlices(tips, colorSchemes)
+			case "all":
+				tips = allTips
+			default:
+				tips = allTips
+			}
+		}
+
+		return ctx.SendString(tips[rand.Intn(len(tips))])
+	})
+
+	app.Get("/v2", func(ctx *fiber.Ctx) error {
 		get, err := requestDotfyle()
 		if err != nil {
 			log.Fatal("Error requesting", err)
 		}
-		allTips = append(allTips, "")
-		return ctx.JSON(get)
 
-		//queries := ctx.Queries()
-		//if len(queries) == 0 {
-		//	return ctx.SendString(allTips[rand.Intn(len(allTips))])
-		//}
-		//
-		//var tips []string
-		//for query := range queries {
-		//	fmt.Println("QUERY", query)
-		//	switch query {
-		//	case "vim":
-		//		tips = concatSlices(tips, vimTips)
-		//	case "plugin":
-		//		tips = concatSlices(tips, pluginTips)
-		//	case "colorscheme":
-		//		tips = concatSlices(tips, colorSchemes)
-		//	case "all":
-		//		tips = allTips
-		//	default:
-		//		tips = allTips
-		//	}
-		//}
-		//
-		//return ctx.SendString(tips[rand.Intn(len(tips))])
+		// pick a random tip
+		return ctx.SendString(get[rand.Intn(len(get))].Name)
 	})
 
 	port := os.Getenv("PORT")
