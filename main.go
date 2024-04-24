@@ -1,14 +1,254 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"math/rand"
-	"os"
-
+	"crypto/tls"
+	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	_ "github.com/heroku/x/hmetrics/onload"
+	"io"
+	"log"
+	"net/http"
+	"os"
 )
+
+//type DotfyleRequest interface {
+//	Result() Result
+//}
+//
+//type Result interface {
+//	Data() Data
+//}
+//
+//type Data interface {
+//	Meta() Meta
+//	Data() []DotfyleData
+//}
+//
+//type Meta interface {
+//	Total() int
+//	LastPage() int
+//	CurrentPage() int
+//	PerPage() int
+//	Prev() interface{}
+//	Next() int
+//}
+//
+//type DotfyleData interface {
+//	Id() int
+//	Owner() string
+//	Name() string
+//	Type() string
+//	Source() string
+//	Category() string
+//	Link() string
+//	Description() string
+//	ShortDescription() string
+//	CreatedAt() string
+//	LastSyncedAt() string
+//	Stars() int
+//	AddedLastWeek() int
+//	DotfyleShieldAddedAt() string
+//	Media() []Media
+//	ConfigCount() int
+//}
+//
+//type Media interface {
+//	Id() int
+//	Url() string
+//	Type() string
+//	Thumbnail() bool
+//	NeovimPluginId() int
+//}
+
+type Response struct {
+	Result Result `json:"result"`
+}
+
+type Result struct {
+	Data Data `json:"data"`
+}
+
+type Data struct {
+	Data []DotfyleRequest `json:"data"`
+}
+
+type DotfyleRequest struct {
+	Id                   int    `json:"id"`
+	Owner                string `json:"owner"`
+	Name                 string `json:"name"`
+	Type                 string `json:"type"`
+	Source               string `json:"source"`
+	Category             string `json:"category"`
+	Link                 string `json:"link"`
+	Description          string `json:"description"`
+	ShortDescription     string `json:"shortDescription"`
+	CreatedAt            string `json:"createdAt"`
+	LastSyncedAt         string `json:"lastSyncedAt"`
+	Stars                int    `json:"stars"`
+	AddedLastWeek        int    `json:"addedLastWeek"`
+	DotfyleShieldAddedAt string `json:"dotfyleShieldAddedAt"`
+	Media                []Media
+	ConfigCount          int `json:"configCount"`
+}
+
+type Media struct {
+	Id             int    `json:"id"`
+	Url            string `json:"url"`
+	Type           string `json:"type"`
+	Thumbnail      bool   `json:"thumbnail"`
+	NeovimPluginId int    `json:"neovimPluginId"`
+}
+
+func requestDotfyle() ([]DotfyleRequest, error) {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	get, err := client.Get("https://dotfyle.com/trpc/searchPluginsWithMedia?batch=1&input=%7B%220%22%3A%7B%22category%22%3A%22colorscheme%22%2C%22sorting%22%3A%22trending%22%2C%22page%22%3A1%2C%22take%22%3A25%7D%7D")
+	if err != nil {
+		return nil, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			return
+		}
+	}(get.Body)
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			return
+		}
+	}(get.Body)
+
+	var response []Response
+
+	const exampleJSON = `
+[
+  {
+    "result": {
+      "data": {
+        "meta": {
+          "total": 105,
+          "lastPage": 5,
+          "currentPage": 1,
+          "perPage": 25,
+          "prev": null,
+          "next": 2
+        },
+        "data": [
+          {
+            "id": 206,
+            "owner": "catppuccin",
+            "name": "nvim",
+            "type": "github",
+            "source": "awesome-neovim",
+            "category": "colorscheme",
+            "link": "https://github.com/catppuccin/nvim",
+            "description": "nvim-catppuccin is a highly configurable theme, which supports both Neovim and Vim and offers four different flavors to choose from. The plugin provides integration with various plugins and tools including LSP, treesitter, and gitsigns. It also allows for customizing colors and highlight groups.",
+            "shortDescription": "🍨 Soothing pastel theme for (Neo)vim",
+            "createdAt": "2023-03-22T19:35:21.591Z",
+            "lastSyncedAt": "2024-04-21T02:27:51.889Z",
+            "stars": 4644,
+            "addedLastWeek": 4,
+            "dotfyleShieldAddedAt": null,
+            "media": [
+              {
+                "id": 116,
+                "url": "https://user-images.githubusercontent.com/56817415/213473285-7bd858be-6947-4d9e-8c01-2573cbc7e76c.png",
+                "type": "image/png",
+                "thumbnail": true,
+                "neovimPluginId": 206
+              },
+              {
+                "id": 71153,
+                "url": "https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/misc/transparent.png",
+                "type": "image/png",
+                "thumbnail": false,
+                "neovimPluginId": 206
+              },
+              {
+                "id": 90905,
+                "url": "https://user-images.githubusercontent.com/13246770/224011118-dcf0f567-650a-4eb2-8be6-0af5cf435501.png",
+                "type": "image/png",
+                "thumbnail": false,
+                "neovimPluginId": 206
+              },
+              {
+                "id": 113,
+                "url": "https://user-images.githubusercontent.com/56817415/213472445-091e54fb-091f-4448-a631-fa6b2ba7d8a5.png",
+                "type": "image/png",
+                "thumbnail": false,
+                "neovimPluginId": 206
+              },
+              {
+                "id": 90909,
+                "url": "https://user-images.githubusercontent.com/1941785/220280749-c3ab52fb-9b8a-4f04-ab98-f8c1bb41f84b.png",
+                "type": "image/png",
+                "thumbnail": false,
+                "neovimPluginId": 206
+              },
+              {
+                "id": 114,
+                "url": "https://user-images.githubusercontent.com/56817415/213473391-603bdc68-68f4-4877-a15a-b469040928b5.png",
+                "type": "image/png",
+                "thumbnail": false,
+                "neovimPluginId": 206
+              },
+              {
+                "id": 71550,
+                "url": "https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/logos/exports/1544x1544_circle.png",
+                "type": "image/png",
+                "thumbnail": false,
+                "neovimPluginId": 206
+              },
+              {
+                "id": 117,
+                "url": "https://user-images.githubusercontent.com/56817415/213471997-34837219-88cc-4db2-baca-e25813a89789.png",
+                "type": "image/png",
+                "thumbnail": false,
+                "neovimPluginId": 206
+              },
+              {
+                "id": 115,
+                "url": "https://user-images.githubusercontent.com/56817415/213473368-16931b70-fd84-4a89-a698-1b1bca1f82de.png",
+                "type": "image/png",
+                "thumbnail": false,
+                "neovimPluginId": 206
+              },
+              {
+                "id": 118,
+                "url": "https://user-images.githubusercontent.com/56817415/213480149-6ba92b81-1ada-46a4-89bd-4e2bb25d19c3.png",
+                "type": "image/png",
+                "thumbnail": false,
+                "neovimPluginId": 206
+              }
+            ],
+            "configCount": 488
+          }
+        ]
+      }
+    }
+  }
+]
+`
+
+	err = json.NewDecoder(get.Body).Decode(&response)
+	if err != nil {
+		log.Printf("Error unmarshalling: %v", err)
+		return nil, err
+	}
+
+	var dotfyleRequest []DotfyleRequest
+	for _, data := range response {
+		for _, d := range data.Result.Data.Data {
+			dotfyleRequest = append(dotfyleRequest, d)
+		}
+	}
+
+	return dotfyleRequest, nil
+}
 
 func concatSlices(slices ...[]string) []string {
 	var result []string
@@ -178,30 +418,36 @@ func main() {
 	allTips := concatSlices(vimTips, pluginTips, colorSchemes)
 
 	app.Get("/", func(ctx *fiber.Ctx) error {
-		queries := ctx.Queries()
-		fmt.Println("queries", queries)
-		if len(queries) == 0 {
-			return ctx.SendString(allTips[rand.Intn(len(allTips))])
+		get, err := requestDotfyle()
+		if err != nil {
+			log.Fatal("Error requesting", err)
 		}
+		allTips = append(allTips, "")
+		return ctx.JSON(get)
 
-		var tips []string
-		for query := range queries {
-			fmt.Println("QUERY", query)
-			switch query {
-			case "vim":
-				tips = concatSlices(tips, vimTips)
-			case "plugin":
-				tips = concatSlices(tips, pluginTips)
-			case "colorscheme":
-				tips = concatSlices(tips, colorSchemes)
-			case "all":
-				tips = allTips
-			default:
-				tips = allTips
-			}
-		}
-
-		return ctx.SendString(tips[rand.Intn(len(tips))])
+		//queries := ctx.Queries()
+		//if len(queries) == 0 {
+		//	return ctx.SendString(allTips[rand.Intn(len(allTips))])
+		//}
+		//
+		//var tips []string
+		//for query := range queries {
+		//	fmt.Println("QUERY", query)
+		//	switch query {
+		//	case "vim":
+		//		tips = concatSlices(tips, vimTips)
+		//	case "plugin":
+		//		tips = concatSlices(tips, pluginTips)
+		//	case "colorscheme":
+		//		tips = concatSlices(tips, colorSchemes)
+		//	case "all":
+		//		tips = allTips
+		//	default:
+		//		tips = allTips
+		//	}
+		//}
+		//
+		//return ctx.SendString(tips[rand.Intn(len(tips))])
 	})
 
 	port := os.Getenv("PORT")
